@@ -10,6 +10,7 @@
         overflow: hidden;
         padding: 0.5em;
         width: 200px;
+        transition: opacity 0.3s ease-in-out;
       }
       .level, .creator, .marker {
         padding: .5em 0 .5em 0;
@@ -29,101 +30,128 @@
         margin-left: auto;
         margin-right: auto;
       }
+      
+      .container.invisible {
+        opacity : 0;
+      }
+      
     </style>
   </head>
   <body>
     <div class="container">
     </div>
     <script language="javascript" type="text/javascript">
-      const params = new URLSearchParams(window.location.search);
-      const model = {
-        minPosition: 3,
-        skipMark: false,
-        list: []
-      };
-      const buildEntry = (el, name, id) => {
-        const nameEl = document.createElement('span');
-        nameEl.classList.add("item-name");
-        nameEl.innerHTML = name;
-        el.appendChild(nameEl);
-        const idEl = document.createElement('span');
-        idEl.classList.add("item-id");
-        idEl.innerHTML = id;
-        el.appendChild(idEl);
-      };
-      const updateView = () => {
-        const container = document.getElementsByClassName("container")[0];
-        container.innerHTML = "";
-        for (const item of model.list) {
-          const el = document.createElement('div');
-          switch (item.type) {
-            case "level":
-              buildEntry(el, item.entry.name, item.entry.id);
-              el.classList.add("level");
-              break;
-            case "creator":
-              buildEntry(el, `Level from ${item.entry.name}`,
-                         `@${item.entry.id}`);
-              el.classList.add("creator");
-              break;
-            case "mark":
-              el.classList.add("marker");
-              el.innerHTML = "[ BREAK ]";
-          }
-          container.appendChild(el);
-        };
-      };
-
-      (() => {
-        if (params.get("demo") === "true") {
-          model.list = [{
-            type: "level",
-            entry: {name: "Castle Of Fear", id: "z00678g"}
-          }, {
-            type: "mark"
-          }, {
-            type: "creator",
-            entry: {name: "Duckbag", id: "t0p3ya"}
-          }];
-          updateView();
+    
+      // Visibility
+      const vwsContainer = document.getElementsByClassName("container")[0];
+      var disapearTimeout;
+      
+      const vws = new WebSocket(`ws://${window.location.host}/overlay/queueVisibility`);
+      // if this websocket is open, make the queue invisible
+      vws.onopen = e => {
+        vwsContainer.classList.add("invisible");
+      }
+      vws.onmessage = m => {
+        const isVisible = JSON.parse(m.data);
+        if (isVisible){
+          clearTimeout(disapearTimeout); // if the queue already visible, stop its disapearance timer 
+          vwsContainer.classList.remove("invisible");
+          disapearTimeout = setTimeout(function(){vwsContainer.classList.add("invisible"); }, 8000);
         } else {
-          if (!params.has("skip_mark")) {
-            document.body.innerHTML = "Missing required query parameters; skip_mark must be specified";
-            return;
-          }
-          model.skipMark = (params.get("skip_mark") === "true");
-          model.minPosition = params.has("min_position") ? parseInt(params.get("min_position"), 10) || 1 : 1;
-
-          const ws = new WebSocket(`ws://${window.location.host}/overlay/levels`);
-          ws.onmessage = m => {
-            const queue = JSON.parse(m.data);
-            const list = [];
-            const maxPosition = params.has("max_position") ? parseInt(params.get("max_position"), 10) || 0 : 0;
-            const endMark = params.has("end_mark") ? parseInt(params.get("end_mark"), 10) || 0 : 0;
-
-            let position = 0;
-            let marks = 0;
-            for (const entry of queue) {
-              if (!model.skipMark || entry.type !== "mark") {
-                position += 1;
-              }
-              if (position < model.minPosition) {
-                continue;
-              }
-              if (entry.type === "mark") {
-                marks += 1;
-              }
-              if (   (maxPosition && position > maxPosition)
-                  || (endMark && marks === endMark) ) {
-                break;
-              }
-              list.push(entry);
-            }
-            model.list = list;
-            updateView();
-          };
+          /// wut
+          console('isVisible is false but it should only receive true');
         }
-      })();
+      }
+    
+      const params = new URLSearchParams(window.location.search);
+	      const model = {
+	        minPosition: 3,
+	        skipMark: false,
+	        list: []
+	      };
+	      const buildEntry = (el, name, id) => {
+	        const nameEl = document.createElement('span');
+	        nameEl.classList.add("item-name");
+	        nameEl.innerHTML = name;
+	        el.appendChild(nameEl);
+	        const idEl = document.createElement('span');
+	        idEl.classList.add("item-id");
+	        idEl.innerHTML = id;
+	        el.appendChild(idEl);
+	      };
+	      const updateView = () => {
+	        const container = document.getElementsByClassName("container")[0];
+	        container.innerHTML = "";
+	        for (const item of model.list) {
+	          const el = document.createElement('div');
+	          switch (item.type) {
+	            case "level":
+	              buildEntry(el, item.entry.name, item.entry.id);
+	              el.classList.add("level");
+	              break;
+	            case "creator":
+	              buildEntry(el, `Level from ${item.entry.name}`,
+	                         `@${item.entry.id}`);
+	              el.classList.add("creator");
+	              break;
+	            case "mark":
+	              el.classList.add("marker");
+	              el.innerHTML = "[ BREAK ]";
+	          }
+	          container.appendChild(el);
+	        };
+	      };
+	
+	      (() => {
+	        if (params.get("demo") === "true") {
+	          model.list = [{
+	            type: "level",
+	            entry: {name: "Castle Of Fear", id: "z00678g"}
+	          }, {
+	            type: "mark"
+	          }, {
+	            type: "creator",
+	            entry: {name: "Duckbag", id: "t0p3ya"}
+	          }];
+	          updateView();
+	        } else {
+	          if (!params.has("skip_mark")) {
+	            document.body.innerHTML = "Missing required query parameters; skip_mark must be specified";
+	            return;
+	          }
+	          model.skipMark = (params.get("skip_mark") === "true");
+	          model.minPosition = params.has("min_position") ? parseInt(params.get("min_position"), 10) || 1 : 1;
+	
+	          const ws = new WebSocket(`ws://${window.location.host}/overlay/levels`);
+	          ws.onmessage = m => {
+	            const queue = JSON.parse(m.data);
+	            const list = [];
+	            const maxPosition = params.has("max_position") ? parseInt(params.get("max_position"), 10) || 0 : 0;
+	            const endMark = params.has("end_mark") ? parseInt(params.get("end_mark"), 10) || 0 : 0;
+	
+	            let position = 0;
+	            let marks = 0;
+	            for (const entry of queue) {
+	              if (!model.skipMark || entry.type !== "mark") {
+	                position += 1;
+	              }
+	              if (position < model.minPosition) {
+	                continue;
+	              }
+	              if (entry.type === "mark") {
+	                marks += 1;
+	              }
+	              if (   (maxPosition && position > maxPosition)
+	                  || (endMark && marks === endMark) ) {
+	                break;
+	              }
+	              list.push(entry);
+	            }
+	            model.list = list;
+	            updateView();
+	          };
+	        }
+	      })();
     </script>
   </body>
 </html>

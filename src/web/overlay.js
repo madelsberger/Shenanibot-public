@@ -2,12 +2,14 @@ const httpServer = require("./server");
 
 const statusUrl = '/overlay/status';
 const levelsUrl = '/overlay/levels';
+const queueVisibilityUrl = '/overlay/queueVisibility';
 
 const state = {
   prefix: "",
   acceptCreatorCode: false,
   levels: "[]",
-  status: ""
+  status: "",
+  queueHidingEnabled: false
 };
 
 const setStatus = open => {
@@ -51,5 +53,21 @@ module.exports = {
   sendLevels: queue => {
     setLevels(queue);
     httpServer.broadcast(levelsUrl, state.levels);
+  },
+  
+  registerQueueVisbilityWs: () => {
+    state.queueHidingEnabled = true;
+    httpServer.register(queueVisibilityUrl);
+  },
+  
+  // sends a signal to a queue overlay telling it to be visible.
+  // The queue overlay makes itself invisible again after a while
+  // if queue hiding is not enabled it returns false
+  sendQueueVisible: () => {
+    if(state.queueHidingEnabled) { // state.queueHidingEnable's only purpose is for this check
+      httpServer.broadcast(queueVisibilityUrl, JSON.stringify(true));
+      return true;
+    }
+    return false;
   }
 };
