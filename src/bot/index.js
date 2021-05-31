@@ -34,6 +34,9 @@ class ShenaniBot {
       if (this.options.creatorCodeMode === "webui") {
         creatorCodeUi.init((c, l) => this._specifyLevelForCreator(c, l));
       }
+      if (this.options.queueCommandSummonsQueueOverlay){
+        overlay.registerQueueVisbilityWs();
+      }
     }
     this.twitch = {
       rewards: {
@@ -460,6 +463,18 @@ class ShenaniBot {
     if (  this.queue.length === 0
        || (this.queue.length === 1 && !this.queue[0]) ) {
       return "There aren't any levels in the queue!";
+    }
+    
+    // Try to send a signal to make the queue visible.
+    // if it returns false, it can't send. This should only happen
+    // when this overlay feature is configured to not be used.
+    // --
+    // This check happens AFTER we've checked the queue length
+    // because I feel like the bot saying "no levels in queue" in chat
+    // is better than displaying an empty queue overlay for a while.
+    // ~eedefeed
+    if (overlay.sendQueueVisible()){
+      return; // stops the bot sending the level queue list in chat.
     }
 
     let limit = Math.min(10, this.queue.length);
