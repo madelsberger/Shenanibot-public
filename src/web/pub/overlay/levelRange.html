@@ -50,7 +50,6 @@
       // if this websocket is open, make the queue invisible
       vws.onopen = e => {
         vwsContainer.classList.add("invisible");
-        console.log('hee hee');
       }
       vws.onmessage = m => {
         const isVisible = JSON.parse(m.data);
