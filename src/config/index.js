@@ -386,6 +386,29 @@ const questions = {
         },
         validate: i => (typeof i !== 'number') ? 'Please enter a valid port number (1 - 65535)' : true
       }, 'The web server requires an unused TCP port.'
+    ),
+    buildConfigQuestion(
+      'config.queueCommandSummonsQueueOverlay', {
+        type: 'confirm',
+        when: a=> {
+          if (!a.useWebServer){
+            delete a.config.config.queueCommandSummonsQueueOverlay;
+            return false;
+          }
+          return true;
+        },
+        message: 'Queue Command Summons Disappearing Queue Overlay?',
+        default: a => fp.get('queueCommandSummonsQueueOverlay', a) ? true : false, // eedefeed: I have no idea what this does, just copying it
+        askAnswered: true
+      }, 
+        'The !queue command is used by viewers to view the queue. \n'
+      + 'Default (no) behaviour is to respond to the queue command in chat with a\n'
+      + 'list of levels. If you\'re using the queue overlay, the queue will always be\n'
+      + 'visible (as long as you have it enabled in your broadcasting program e.g.\n'
+      + 'OBS)\n'
+      + 'Alternative (yes) behaviour is to have the queue overlay rendered invisible\n'
+      + 'until a viewer uses the !queue command, whereupon the queue overlay is\n'
+      + 'displayed for 8 seconds'
     )
   ]
 };
